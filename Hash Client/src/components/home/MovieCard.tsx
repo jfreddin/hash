@@ -92,7 +92,7 @@ export function MovieCard({
           >
             <iframe
               src={getTrailerEmbedUrl(trailerKey)}
-              className="w-full h-full"
+              className="w-full h-full pointer-events-none"
               style={{ border: 'none' }}
               allow="accelerometer; autoplay; modestbranding; encrypted-media; gyroscope; picture-in-picture"
               title={`${title} trailer`}

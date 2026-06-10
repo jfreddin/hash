@@ -8,7 +8,8 @@ import {
     getMyList,
     addToMyList,
     removeFromMyList,
-    getUserFeed
+    getUserFeed,
+    resolveCinebyWatchUrl
 } from '../controllers/movieControllers.js';
 import { verifyToken } from '../middleware/verifyToken.js';
 
@@ -19,6 +20,7 @@ router.use(verifyToken);
 
 // Category and search endpoints
 router.get('/search', searchMovies);
+router.get('/cineby/resolve', resolveCinebyWatchUrl);
 router.get('/trending', getTrendingMovies);
 router.get('/popular', getPopularMovies);
 router.get('/new', getNewMovies);

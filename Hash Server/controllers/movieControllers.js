@@ -3,6 +3,107 @@ import Show from '../models/Show.js';
 import User from '../models/User.js';
 import UserFeed from '../models/UserFeed.js';
 
+function buildCinebySearchQuery({ title, type, year, season, episode, imdbId, tmdbId }) {
+    const parts = ['site:cineby.vg/watch/', 'cineby'];
+    if (title) parts.push(`"${title}"`);
+    if (year) parts.push(String(year));
+    if (type === 'show') {
+        if (season !== undefined && season !== null) parts.push(`season ${season}`);
+        if (episode !== undefined && episode !== null) parts.push(`episode ${episode}`);
+    }
+    if (imdbId) parts.push(String(imdbId));
+    if (tmdbId) parts.push(String(tmdbId));
+    return parts.join(' ');
+}
+
+function normalizeCinebyUrl(rawUrl, season, episode) {
+    try {
+        const url = new URL(rawUrl);
+        if (!url.hostname.endsWith('cineby.vg')) return null;
+        if (!url.pathname.startsWith('/watch/')) return null;
+
+        if (season !== undefined && season !== null && !url.searchParams.has('s')) {
+            url.searchParams.set('s', String(season));
+        }
+        if (episode !== undefined && episode !== null && !url.searchParams.has('e')) {
+            url.searchParams.set('e', String(episode));
+        }
+        return url.toString();
+    } catch {
+        return null;
+    }
+}
+
+export const resolveCinebyWatchUrl = async (req, res) => {
+    const {
+        title,
+        type = 'movie',
+        year,
+        season,
+        episode,
+        imdbId,
+        tmdbId,
+    } = req.query;
+
+    if (!title && !imdbId && !tmdbId) {
+        return res.status(400).json({ success: false, message: 'Missing title or id for Cineby lookup' });
+    }
+
+    const searchQuery = buildCinebySearchQuery({
+        title: title ? String(title) : '',
+        type: String(type),
+        year,
+        season,
+        episode,
+        imdbId,
+        tmdbId,
+    });
+
+    try {
+        const searchUrl = `https://duckduckgo.com/html/?q=${encodeURIComponent(searchQuery)}`;
+        const response = await fetch(searchUrl, {
+            headers: {
+                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
+                accept: 'text/html,application/xhtml+xml',
+            },
+        });
+
+        if (!response.ok) {
+            return res.status(502).json({ success: false, message: 'Failed to search Cineby' });
+        }
+
+        const html = await response.text();
+        const candidates = new Set();
+
+        for (const match of html.matchAll(/uddg=([^&"']+)/g)) {
+            try {
+                candidates.add(decodeURIComponent(match[1]));
+            } catch {
+                // ignore malformed result URLs
+            }
+        }
+
+        for (const match of html.matchAll(/https:\/\/cineby\.vg\/watch\/[^\s"'<>]+/g)) {
+            candidates.add(match[0]);
+        }
+
+        const normalized = Array.from(candidates)
+            .map((candidate) => normalizeCinebyUrl(candidate, season, episode))
+            .filter(Boolean);
+
+        const chosen = normalized.find((candidate) => candidate.includes('cineby.vg/watch/')) || null;
+
+        res.status(200).json({
+            success: true,
+            searchQuery,
+            url: chosen,
+        });
+    } catch (error) {
+        console.error('Error resolving Cineby watch URL:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+};
+
 // GET /api/movies/search?q=<query>
 export const searchMovies = async (req, res) => {
     const { q } = req.query;

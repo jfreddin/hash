@@ -85,20 +85,20 @@ export function HomeNavbar({ activeTab, onTabChange, user, onLogout, scrolled }:
         backdropFilter: scrolled ? 'blur(12px)' : 'blur(0px)',
       }}
       transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
-      style={{ height: '80px' }}
+      style={{ height: '100px' }}
     >
       <div className="w-full flex items-center justify-between">
         {/* ── Left: Avatar ── */}
         <div className="flex items-center gap-2.5 min-w-[90px]">
-          <div className="w-10 h-10 rounded-sm bg-purple-600 flex items-center justify-center text-white font-bold text-base select-none">
+          <div className="w-12 h-12 rounded-sm bg-purple-600 flex items-center justify-center text-white font-bold text-lg select-none">
             {user?.name?.[0]?.toUpperCase() ?? 'U'}
           </div>
-          <ChevronDown size={16} className="text-white/60" />
+          <ChevronDown size={18} className="text-white/60" />
         </div>
 
         {/* ── Center: Search + Nav Tabs ── */}
         <motion.nav
-          className="flex items-center gap-2"
+          className="flex items-center gap-3"
           onMouseLeave={handleMouseLeaveNav}
           animate={{ scale: (inputMode !== 'mouse' && zone === ZONE) ? 1.05 : 1 }}
           transition={{ type: 'spring', stiffness: 300, damping: 25 }}
@@ -110,8 +110,8 @@ export function HomeNavbar({ activeTab, onTabChange, user, onLogout, scrolled }:
             className="relative rounded-full transition-colors duration-150 cursor-pointer mr-3 flex items-center justify-center hover:bg-white/5"
             style={{
               color: showWhiteSearch ? '#000' : 'rgba(255,255,255,0.85)',
-              width: '44px',
-              height: '44px',
+              width: '52px',
+              height: '52px',
             }}
             onMouseEnter={handleTabHover}
             onClick={() => handleTabClick('search')}
@@ -133,7 +133,7 @@ export function HomeNavbar({ activeTab, onTabChange, user, onLogout, scrolled }:
                 transition={{ type: 'spring', stiffness: 320, damping: 30 }}
               />
             )}
-            <Search size={20} className="relative" />
+            <Search size={24} className="relative" />
           </button>
 
           {/* Text Tabs (items 1..5) */}
@@ -149,7 +149,7 @@ export function HomeNavbar({ activeTab, onTabChange, user, onLogout, scrolled }:
               <button
                 key={tab.id}
                 id={`nav-tab-${tab.id}`}
-                className="relative px-6 py-2.5 text-base font-semibold rounded-full select-none cursor-pointer transition-colors hover:text-white"
+                className="relative px-8 py-3 text-lg font-semibold rounded-full select-none cursor-pointer transition-colors hover:text-white"
                 style={{
                   color: isWhite ? '#000' : 'rgba(255,255,255,0.85)',
                   zIndex: 1,
@@ -190,7 +190,7 @@ export function HomeNavbar({ activeTab, onTabChange, user, onLogout, scrolled }:
         </motion.nav>
 
         {/* ── Right: HASH logo + logout ── */}
-        <div className="flex items-center gap-6 min-w-[90px] justify-end">
+        <div className="flex items-center gap-8 min-w-[90px] justify-end">
           {/* Logout Button (item 6) */}
           <button
             id="nav-logout-btn"
@@ -202,8 +202,8 @@ export function HomeNavbar({ activeTab, onTabChange, user, onLogout, scrolled }:
             className="relative rounded-full transition-colors cursor-pointer flex items-center justify-center hover:bg-white/5"
             style={{
               color: showWhiteLogout ? '#000' : 'rgba(255,255,255,0.65)',
-              width: '44px',
-              height: '44px',
+              width: '52px',
+              height: '52px',
             }}
             title="Sign out"
           >
@@ -215,10 +215,10 @@ export function HomeNavbar({ activeTab, onTabChange, user, onLogout, scrolled }:
                 transition={{ type: 'spring', stiffness: 320, damping: 30 }}
               />
             )}
-            <LogOut size={18} className="relative" />
+            <LogOut size={22} className="relative" />
           </button>
           <span
-            className="text-[#e50914] font-black text-3xl tracking-tighter select-none"
+            className="text-[#e50914] font-black text-4xl tracking-tighter select-none"
             style={{ fontFamily: "'NetflixSans','Helvetica Neue',Arial,sans-serif" }}
           >
             HASH

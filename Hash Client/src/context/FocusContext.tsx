@@ -78,6 +78,22 @@ function focusReducer(state: FocusState, action: FocusAction): FocusState {
     case 'NAVIGATE': {
       const { dz, di } = action;
 
+      // Custom navigation inside Playback view (zone 200)
+      if (state.zone === 200) {
+        let nextItem = state.item;
+        if (dz === -1 || di === -1) nextItem = 0; // Up or Left -> Back button
+        else if (dz === 1 || di === 1) nextItem = 1; // Down or Right -> Player
+        
+        if (nextItem !== state.item) {
+          return {
+            ...state,
+            item: nextItem,
+            zoneItemMemory: { ...state.zoneItemMemory, [200]: nextItem },
+          };
+        }
+        return state;
+      }
+
       // Custom 2D grid navigation inside Movie Details (zone 100)
       if (state.zone === 100) {
         const isSeries = state.zoneMaxItems[100] === 7;
@@ -99,6 +115,58 @@ function focusReducer(state: FocusState, action: FocusAction): FocusState {
             ...state,
             item: nextIdx,
             zoneItemMemory: { ...state.zoneItemMemory, [100]: nextIdx },
+          };
+        }
+        return state;
+      }
+
+      // Custom navigation inside Seasons List (zone 101)
+      if (state.zone === 101) {
+        let nextItem = state.item;
+        if (dz === -1) { // Up
+          nextItem = Math.max(0, state.item - 1);
+        } else if (dz === 1) { // Down
+          nextItem = Math.min((state.zoneMaxItems[101] ?? 1) - 1, state.item + 1);
+        } else if (di === 1) { // Right
+          // Switch to Episodes (zone 102) if we have episodes registered
+          if (state.zoneMaxItems[102] && state.zoneMaxItems[102] > 0) {
+            return {
+              ...state,
+              zone: 102,
+              item: 0,
+            };
+          }
+        }
+        if (nextItem !== state.item) {
+          return {
+            ...state,
+            item: nextItem,
+            zoneItemMemory: { ...state.zoneItemMemory, [101]: nextItem },
+          };
+        }
+        return state;
+      }
+
+      // Custom navigation inside Episodes List (zone 102)
+      if (state.zone === 102) {
+        let nextItem = state.item;
+        if (dz === -1) { // Up
+          nextItem = Math.max(0, state.item - 1);
+        } else if (dz === 1) { // Down
+          nextItem = Math.min((state.zoneMaxItems[102] ?? 1) - 1, state.item + 1);
+        } else if (di === -1) { // Left
+          // Switch back to Seasons (zone 101)
+          return {
+            ...state,
+            zone: 101,
+            item: Math.min(state.zoneItemMemory[101] ?? 1, (state.zoneMaxItems[101] ?? 2) - 1),
+          };
+        }
+        if (nextItem !== state.item) {
+          return {
+            ...state,
+            item: nextItem,
+            zoneItemMemory: { ...state.zoneItemMemory, [102]: nextItem },
           };
         }
         return state;

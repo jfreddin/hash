@@ -10,11 +10,11 @@ import {
 // ── Constants ───────────────────────────────────────────────────────────
 // These are FIXED. They must never change based on content. This is what
 // keeps the layout perfectly locked even as cards expand.
-export const CARD_W = 260;
-export const CARD_H = 390;
+export const CARD_W = 300;
+export const CARD_H = 450;
 export const GAP = 24;
-export const EXPANDED_W = 700;
-export const METADATA_H = 110; // Reserved space below the card strip for metadata text
+export const EXPANDED_W = 800;
+export const METADATA_H = 130; // Reserved space below the card strip for metadata text
 export const ROW_H = CARD_H + METADATA_H + 36;
 
 interface MovieRowProps {
@@ -28,6 +28,7 @@ interface MovieRowProps {
   trailerVisible: boolean;
   trailerIsHero: boolean;
   activeDetailMovieId?: string;
+  activeCardRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 export function MovieRow({
@@ -41,6 +42,7 @@ export function MovieRow({
   trailerVisible,
   trailerIsHero,
   activeDetailMovieId,
+  activeCardRef,
 }: MovieRowProps) {
   const { zone, item, selectCount, registerZone, unregisterZone, setFocus, setInputMode, zoneItemMemory } = useFocus();
 
@@ -127,16 +129,14 @@ export function MovieRow({
                 isFocused={isFocused}
                 onClick={() => {
                   setInputMode('mouse');
-                  if (isFocused) {
-                    onOpenDetails(movie);
-                  } else {
-                    setFocus(rowZone, idx, 'mouse');
-                  }
+                  setFocus(rowZone, idx, 'mouse');
+                  onOpenDetails(movie);
                 }}
                 onStartTrailer={onStartTrailer}
                 onStopTrailer={onStopTrailer}
                 trailerPlaying={trailerMovie?._id === movie._id && trailerVisible && !trailerIsHero}
                 activeDetailMovieId={activeDetailMovieId}
+                activeCardRef={activeCardRef}
               />
             );
           })}
@@ -150,16 +150,16 @@ export function MovieRow({
           <motion.div
             key={`meta-${focusedMovie._id ?? displayFocusedIdx}`}
             className="absolute left-14 right-14"
-            style={{ top: CARD_H + 36 + 12 }}
+            style={{ top: CARD_H + 36 + 16 }}
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
           >
              {/* Metadata row */}
-            <div className="flex items-center gap-3 text-[15px] mb-3" style={{ color: 'rgba(255,255,255,0.65)' }}>
+            <div className="flex items-center gap-3 text-[17px] mb-3" style={{ color: 'rgba(255,255,255,0.65)' }}>
               {cert && (
-                <span className="border border-white/35 px-1.5 py-px rounded text-[11px] text-white/75 uppercase">{cert}</span>
+                <span className="border border-white/35 px-2 py-0.5 rounded text-[12px] text-white/75 uppercase">{cert}</span>
               )}
               {year && <span className="text-white font-medium">{year}</span>}
               {rating && (
@@ -171,13 +171,13 @@ export function MovieRow({
               {focusedMovie?.episodes && focusedMovie.episodes.length > 0 && (
                 <span className="text-white/80">{focusedMovie.episodes.length} Episodes</span>
               )}
-              <span className="border border-white/35 px-1.5 py-px rounded text-[11px] text-white/75">HD</span>
+              <span className="border border-white/35 px-2 py-0.5 rounded text-[12px] text-white/75">HD</span>
             </div>
             {overview && (
               <p
-                className="text-lg text-white/80 leading-relaxed overflow-hidden"
+                className="text-xl text-white/80 leading-relaxed overflow-hidden"
                 style={{
-                  maxWidth: '65%',
+                  maxWidth: '75%',
                   display: '-webkit-box',
                   WebkitLineClamp: 2,
                   WebkitBoxOrient: 'vertical',
@@ -204,6 +204,7 @@ interface FixedCardProps {
   onStopTrailer: (movie: any) => void;
   trailerPlaying: boolean;
   activeDetailMovieId?: string;
+  activeCardRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 function FixedCard({
@@ -214,6 +215,7 @@ function FixedCard({
   onStopTrailer,
   trailerPlaying,
   activeDetailMovieId,
+  activeCardRef,
 }: FixedCardProps) {
   const { muted, toggleMute } = useMute();
 
@@ -276,6 +278,7 @@ function FixedCard({
   // The card is ALWAYS CARD_H tall — it only widens.
   return (
     <motion.div
+      ref={isFocused ? activeCardRef : undefined}
       className="relative shrink-0 rounded-lg overflow-hidden cursor-pointer select-none"
       animate={{ width: isExpanded ? EXPANDED_W : CARD_W, scale: 1.0, y: 0 }}
       transition={{ type: 'spring', stiffness: 120, damping: 22, mass: 1.1 }}
@@ -323,13 +326,13 @@ function FixedCard({
               <img
                 src={logoUrl}
                 alt={title}
-                className="max-h-16 max-w-[60%] object-contain drop-shadow-md"
+                className="max-h-20 max-w-[60%] object-contain drop-shadow-md"
                 draggable={false}
               />
             ) : (
               <h3
                 className="text-white font-bold drop-shadow-lg line-clamp-1"
-                style={{ fontSize: '1.6rem' }}
+                style={{ fontSize: '1.9rem' }}
               >
                 {title}
               </h3>
@@ -369,8 +372,8 @@ function FixedCard({
             <div
               className="flex items-center justify-center rounded-full"
               style={{
-                width: 34,
-                height: 34,
+                width: 42,
+                height: 42,
                 background: 'rgba(0,0,0,0.55)',
                 backdropFilter: 'blur(6px)',
                 border: '1.5px solid rgba(255,255,255,0.3)',
@@ -379,8 +382,8 @@ function FixedCard({
               {muted ? (
                 /* Muted: speaker with X lines */
                 <svg
-                  width="16"
-                  height="16"
+                  width="20"
+                  height="20"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="white"
@@ -395,8 +398,8 @@ function FixedCard({
               ) : (
                 /* Unmuted: speaker with waves */
                 <svg
-                  width="16"
-                  height="16"
+                  width="20"
+                  height="20"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="white"

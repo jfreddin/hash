@@ -41,3 +41,25 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Transparent shell during playback so <webview> video shows through */
+html.player-active,
+body.player-active,
+body.player-active #root {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+body.player-active::before,
+body.player-active::after {
+  display: none !important;
+}
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

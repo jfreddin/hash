@@ -1,0 +1,13 @@
+{
+  "name": "hash-video-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.4",
+    "playwright": "^1.60.0"
+  }
+}

@@ -18,6 +18,7 @@ interface HeroSectionProps {
   onStopTrailer: (movie: any) => void;
   trailerPlaying: boolean;
   activeDetailMovieId?: string;
+  onPlay: (movie: any, season?: number, episode?: number) => void;
 }
 
 export function HeroSection({
@@ -27,6 +28,7 @@ export function HeroSection({
   onStopTrailer,
   trailerPlaying,
   activeDetailMovieId,
+  onPlay,
 }: HeroSectionProps) {
   const { zone, item, selectCount, inputMode, setFocus, setInputMode } = useFocus();
   const { muted, toggleMute } = useMute();
@@ -68,12 +70,18 @@ export function HeroSection({
   useEffect(() => {
     if (selectCount <= prevSelect.current) return;
     prevSelect.current = selectCount;
-    if (isPlayFocused && trailerKey) {
-      window.open(`https://www.youtube.com/watch?v=${trailerKey}`, '_blank');
+    if (isPlayFocused) {
+      const isSeries = !!(movie?.episodes && movie.episodes.length > 0);
+      if (isSeries) {
+        const firstEp = movie.episodes[0];
+        onPlay(movie, firstEp?.season_number ?? 1, firstEp?.episode_number ?? 1);
+      } else {
+        onPlay(movie);
+      }
     } else if (isInfoFocused) {
       onOpenDetails(movie);
     }
-  }, [selectCount, isPlayFocused, isInfoFocused, trailerKey, movie, onOpenDetails]);
+  }, [selectCount, isPlayFocused, isInfoFocused, movie, onOpenDetails]);
 
   const backdropUrl = getBackdropUrl(movie);
   const logoUrl = getLogoUrl(movie);
@@ -166,13 +174,13 @@ export function HeroSection({
           />
 
           {/* ── Content ── */}
-          <div className="absolute bottom-0 left-0 px-14 pb-14 flex flex-col gap-4 max-w-[640px]" style={{ zIndex: 10 }}>
+          <div className="absolute bottom-0 left-0 px-14 pb-14 flex flex-col gap-6 max-w-[800px]" style={{ zIndex: 10 }}>
             {logoUrl ? (
               <motion.img
                 src={logoUrl}
                 alt={title}
                 className="object-contain object-left"
-                style={{ maxHeight: '120px', maxWidth: '420px' }}
+                style={{ maxHeight: '160px', maxWidth: '540px' }}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
@@ -181,7 +189,7 @@ export function HeroSection({
               <motion.h1
                 className="text-white font-black"
                 style={{
-                  fontSize: 'clamp(2.2rem, 5.5vw, 4rem)',
+                  fontSize: 'clamp(2.5rem, 6vw, 4.5rem)',
                   lineHeight: 1.05,
                   textShadow: '0 2px 12px rgba(0,0,0,0.9)',
                 }}
@@ -194,8 +202,8 @@ export function HeroSection({
             )}
 
             <motion.div
-              className="flex items-center gap-2 flex-wrap"
-              style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.85rem' }}
+              className="flex items-center gap-3 flex-wrap"
+              style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1rem' }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.08 }}
@@ -204,13 +212,13 @@ export function HeroSection({
               {movie?.certification && (
                 <>
                   <span className="text-white/30">•</span>
-                  <span className="border border-white/40 px-1.5 py-0.5 text-xs rounded font-medium">{movie.certification}</span>
+                  <span className="border border-white/40 px-2 py-0.5 text-sm rounded font-medium">{movie.certification}</span>
                 </>
               )}
               {rating && (
                 <>
                   <span className="text-white/30">•</span>
-                  <span className="text-yellow-400 font-semibold">★ {rating}</span>
+                  <span className="text-yellow-400 font-bold">★ {rating}</span>
                 </>
               )}
               {cast && (
@@ -223,14 +231,14 @@ export function HeroSection({
 
             {overview && (
               <motion.p
-                className="text-sm leading-relaxed"
+                className="text-base leading-relaxed"
                 style={{
                   color: 'rgba(255,255,255,0.72)',
                   display: '-webkit-box',
                   WebkitLineClamp: 3,
                   WebkitBoxOrient: 'vertical',
                   overflow: 'hidden',
-                  maxWidth: '560px',
+                  maxWidth: '700px',
                 }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -241,7 +249,7 @@ export function HeroSection({
             )}
 
             <motion.div
-              className="flex items-center gap-3 mt-1"
+              className="flex items-center gap-4 mt-2"
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
@@ -250,7 +258,7 @@ export function HeroSection({
                 id="hero-play-btn"
                 onClick={() => {
                   setFocus(ZONE, 0, 'mouse');
-                  if (trailerKey) window.open(`https://www.youtube.com/watch?v=${trailerKey}`, '_blank');
+                  onPlay(movie);
                 }}
                 onMouseEnter={() => { setInputMode('mouse'); setFocus(ZONE, 0, 'mouse'); }}
                 animate={{
@@ -258,13 +266,13 @@ export function HeroSection({
                   backgroundColor: isPlayFocused ? '#ffffff' : 'rgba(255,255,255,0.92)',
                 }}
                 transition={{ type: 'spring', stiffness: 280, damping: 24 }}
-                className="flex items-center gap-2.5 px-8 py-3 rounded font-bold text-black text-sm"
+                className="flex items-center gap-2.5 px-10 py-4 rounded font-bold text-black text-base"
                 style={{
                   outline: isPlayFocused ? '2px solid white' : 'none',
                   outlineOffset: '3px',
                 }}
               >
-                <Play size={18} fill="black" />
+                <Play size={22} fill="black" />
                 Play
               </motion.button>
 
@@ -280,13 +288,13 @@ export function HeroSection({
                   backgroundColor: isInfoFocused ? 'rgba(255,255,255,0.28)' : 'rgba(109,109,110,0.72)',
                 }}
                 transition={{ type: 'spring', stiffness: 280, damping: 24 }}
-                className="flex items-center gap-2.5 px-8 py-3 rounded font-bold text-white text-sm"
+                className="flex items-center gap-2.5 px-10 py-4 rounded font-bold text-white text-base"
                 style={{
                   outline: isInfoFocused ? '2px solid rgba(255,255,255,0.6)' : 'none',
                   outlineOffset: '3px',
                 }}
               >
-                <Info size={18} />
+                <Info size={22} />
                 More Info
               </motion.button>
             </motion.div>
@@ -296,7 +304,7 @@ export function HeroSection({
           <AnimatePresence>
             {isZoneFocused && (
               <motion.button
-                className="absolute bottom-5 right-5 flex flex-col items-center gap-1 select-none"
+                className="absolute bottom-6 right-8 flex flex-col items-center gap-1 select-none"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
@@ -320,21 +328,21 @@ export function HeroSection({
                 <div
                   className="flex items-center justify-center rounded-full"
                   style={{
-                    width: 38,
-                    height: 38,
+                    width: 46,
+                    height: 46,
                     background: 'rgba(0,0,0,0.55)',
                     backdropFilter: 'blur(6px)',
                     border: '1.5px solid rgba(255,255,255,0.3)',
                   }}
                 >
                   {muted ? (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="white" stroke="none" />
                       <line x1="23" y1="9" x2="17" y2="15" />
                       <line x1="17" y1="9" x2="23" y2="15" />
                     </svg>
                   ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="white" stroke="none" />
                       <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
                       <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />

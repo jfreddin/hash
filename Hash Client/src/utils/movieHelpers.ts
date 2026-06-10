@@ -63,6 +63,7 @@ export function getTrailerEmbedUrl(key: string, muted = true): string {
     cc_load_policy: '0',
     enablejsapi: '1',
     showinfo: '0',
+    widget_referrer: 'https://www.youtube.com/'
   });
 
   if (typeof window !== 'undefined') {

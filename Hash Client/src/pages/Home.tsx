@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { useNavigate, useParams } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Volume2, VolumeX } from 'lucide-react';
 
 import { FocusProvider, useFocus } from '../context/FocusContext';
 import { MuteProvider, useMute } from '../context/MuteContext';
@@ -12,14 +13,15 @@ import type { TabId } from '../components/home/HomeNavbar';
 import { HeroSection } from '../components/home/HeroSection';
 import { MovieRow, CARD_W, CARD_H, ROW_H, EXPANDED_W } from '../components/home/MovieRow';
 import { PlaceholderPage } from '../components/home/PlaceholderPage';
+import { SearchPage } from '../components/home/SearchPage';
 import { MovieDetail } from '../components/home/MovieDetail';
 import { getBackdropUrl, getTrailerKey, getTrailerEmbedUrl } from '../utils/movieHelpers';
 
 const API = 'http://localhost:5001/api';
 
 // ── Layout constants — fixed, never computed from DOM ─────────────────────
-const NAVBAR_H = 80;    // px — height of the fixed navbar
-const HERO_H = 520;     // px — hero section height (rounded card)
+const NAVBAR_H = 100;    // px — height of the fixed navbar
+const HERO_H = 600;     // px — hero section height (rounded card)
 const HERO_CARD_TOP_OFFSET = 12;
 const HERO_CARD_WIDTH = '94%';
 const HERO_ROW_GAP = 18; // gap between hero and first movie row
@@ -58,6 +60,7 @@ function GlobalTrailerPlayer({
 }: GlobalTrailerPlayerProps) {
   const trailerKey = movie ? getTrailerKey(movie) : null;
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const { volume } = useMute();
 
   useEffect(() => {
     if (!visible || !trailerKey) return;
@@ -75,20 +78,69 @@ function GlobalTrailerPlayer({
     return () => window.removeEventListener('message', onMessage);
   }, [visible, trailerKey, onEnded]);
 
+  // Global Audio Sync for Trailers
+  useEffect(() => {
+    if (!visible || !trailerKey || !iframeRef.current) return;
+
+    const sync = () => {
+      const effectiveVol = muted ? 0 : volume;
+      const script = `
+        (function sync(root) {
+          Array.from(root.querySelectorAll("video, audio")).forEach(m => {
+            m.volume = ${effectiveVol};
+          });
+          Array.from(root.querySelectorAll("iframe")).forEach(frame => {
+            try {
+              if (frame.contentDocument) sync(frame.contentDocument);
+            } catch (e) {}
+          });
+        })(document);
+      `;
+      try {
+         const win = window as any;
+         if (win.require) {
+            if (iframeRef.current && iframeRef.current.contentWindow) {
+               (iframeRef.current.contentWindow as any).eval?.(script);
+            }
+         }
+      } catch (e) {}
+    };
+
+    const interval = setInterval(sync, 1000);
+    sync(); // Immediate attempt
+
+    return () => clearInterval(interval);
+  }, [volume, muted, visible, trailerKey]);
+
   if (!visible || !trailerKey) return null;
 
   // Compute dimensions relative to root viewport (since player is rendered at root level)
   const dims = isFullScreen
     ? { left: 0, top: 0, width: '100vw', height: '100vh', zIndex: 35 }
     : isHero
-    ? { left: '3%', top: NAVBAR_H + HERO_CARD_TOP_OFFSET, width: HERO_CARD_WIDTH, height: HERO_H - HERO_CARD_TOP_OFFSET, zIndex: 2 }
-    : { left: 60, top: NAVBAR_H + 108, width: EXPANDED_W - 8, height: CARD_H - 8, zIndex: 2 };
+    ? { left: '3%', top: NAVBAR_H + HERO_CARD_TOP_OFFSET, width: HERO_CARD_WIDTH, height: HERO_H - HERO_CARD_TOP_OFFSET - 12, zIndex: 2 }
+    : { left: 60, top: NAVBAR_H + 128, width: EXPANDED_W - 8, height: CARD_H - 8, zIndex: 2 };
   const radius = isFullScreen ? 0 : isHero ? 16 : 4;
+
+  // Optimized Crop Logic: Fixed Height (100%), Automatic Aspect Width
   const iframeCrop = isFullScreen
     ? { left: 0, top: 0, width: '100%', height: '100%' }
     : isHero
-    ? { left: '-30%', top: '-30%', width: '160%', height: '160%' }
-    : { left: '-18%', top: '-18%', width: '136%', height: '136%' };
+    ? { 
+        left: '50%', 
+        top: '50%', 
+        width: 'max(120vw, 1200px)', 
+        height: 'max(67.5vw, 675px)',
+        transform: 'translate(-50%, -50%)' 
+      }
+    : { 
+        left: '50%', 
+        top: '50%', 
+        // 178% width at 100% height ensures the 16:9 trailer always covers the vertical card area
+        width: '178%', 
+        height: '100%', 
+        transform: 'translate(-50%, -50%)' 
+      };
 
   return (
     <motion.div
@@ -115,41 +167,132 @@ function GlobalTrailerPlayer({
     >
       <iframe
         ref={iframeRef}
-        key={`global-trailer-${trailerKey}-${muted}`}
-        src={getTrailerEmbedUrl(trailerKey, muted)}
-        className="absolute"
+        key={`global-trailer-${trailerKey}`}
+        src={getTrailerEmbedUrl(trailerKey, true)} // Always start muted in URL, we handle unmuting via JS
+        className="absolute pointer-events-none"
         style={{
           ...iframeCrop,
           border: 'none',
-          pointerEvents: 'none',
         }}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen={false}
         referrerPolicy="strict-origin-when-cross-origin"
         title="trailer"
       />
+      {/* Dark Vignette Overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          boxShadow: 'inset 0 0 100px rgba(0,0,0,0.85), inset 0 0 60px rgba(0,0,0,0.6)',
+          zIndex: 10,
+        }}
+      />
     </motion.div>
   );
 }
 
 // ─────────────────────────────────────────────────────────
+const TABS: TabId[] = ['search', 'home', 'shows', 'movies', 'games', 'myhash'];
+
 // Inner component — lives inside FocusProvider
 // ─────────────────────────────────────────────────────────
 function HomeContent({ user, onLogout }: { user: any; onLogout: () => void }) {
   const navigate = useNavigate();
+  const { tmdbId: urlTmdbId } = useParams();
 
   const [activeTab, setActiveTab] = useState<TabId>('home');
   const [glowVisible, setGlowVisible] = useState(false);
   const { zone, item, selectCount, backCount, navigate: focusNavigate, setFocus } = useFocus();
-  const { muted } = useMute();
+  const { volume, showVolumeOverlay, muted } = useMute();
 
   const [activeDetailMovie, setActiveDetailMovie] = useState<any | null>(null);
+  const [isEpisodesView, setIsEpisodesView] = useState<boolean>(false);
   const [trailerMovie, setTrailerMovie] = useState<any | null>(null);
   const [trailerIsHero, setTrailerIsHero] = useState<boolean>(false);
   const [trailerVisible, setTrailerVisible] = useState<boolean>(false);
   const trailerStateRef = useRef({ movieId: null as string | null, isHero: false, visible: false });
 
   const lastFocusBeforeDetails = useRef<{ zone: number; item: number } | null>(null);
+
+  const [feed, setFeed] = useState<any | null>(null);
+  const [myList, setMyList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // ── Sync URL with Detail View ──
+  useEffect(() => {
+    if (!feed || !urlTmdbId) {
+      if (!urlTmdbId && activeDetailMovie) {
+        setActiveDetailMovie(null);
+      }
+      return;
+    }
+
+    // Try to find the movie in the feed or myList
+    const findMovie = () => {
+      // Check hero movies
+      const heroes = [feed.heroHome, feed.heroMovies, feed.heroShows];
+      const foundHero = heroes.find(m => m && (String(m.id) === urlTmdbId || String(m._id) === urlTmdbId));
+      if (foundHero) return foundHero;
+
+      // Check rows
+      const allRows = [
+        ...Object.values(feed.home || {}),
+        ...Object.values(feed.movies || {}),
+        ...Object.values(feed.shows || {}),
+        myList
+      ];
+      for (const row of allRows) {
+        const found = (row as any[]).find(m => m && (String(m.id) === urlTmdbId || String(m._id) === urlTmdbId));
+        if (found) return found;
+      }
+      return null;
+    };
+
+    const movie = findMovie();
+    if (movie) {
+      setActiveDetailMovie(movie);
+      // If we don't have focus in details yet, set it
+      if (zone !== 100 && zone !== 101 && zone !== 102) {
+        setFocus(100, 1, 'keyboard');
+      }
+    } else {
+      // If not found in feed, try to fetch from backend
+      const fetchFromBackend = async () => {
+        try {
+          const response = await fetch(`${API}/movies/details/${urlTmdbId}`, {
+            credentials: 'include',
+          });
+          const data = await response.json();
+          if (data.success && data.movie) {
+            setActiveDetailMovie(data.movie);
+            if (zone !== 100 && zone !== 101 && zone !== 102) {
+              setFocus(100, 1, 'keyboard');
+            }
+          } else {
+            navigate('/home', { replace: true });
+          }
+        } catch (err) {
+          console.error('Failed to fetch movie details:', err);
+          navigate('/home', { replace: true });
+        }
+      };
+
+      fetchFromBackend();
+    }
+  }, [urlTmdbId, feed, myList, navigate, setFocus]);
+
+  const onPlayMovie = useCallback((movie: any, season?: number, episode?: number) => {
+    const type = movie.media_type || (movie.title ? 'movie' : 'tv');
+    if (type === 'movie') {
+      navigate(`/watch/movie/${movie.id || movie._id}`, { state: { movie } });
+    } else {
+      const s = season ?? 1;
+      const e = episode ?? 1;
+      navigate(`/watch/tv/${movie.id || movie._id}/${s}/${e}`, { state: { movie } });
+    }
+    // Stop trailer preview when entering playback
+    setTrailerMovie(null);
+  }, [navigate]);
 
   useEffect(() => {
     trailerStateRef.current = {
@@ -177,22 +320,23 @@ function HomeContent({ user, onLogout }: { user: any; onLogout: () => void }) {
   // Sync trailer visibility with active movie selection to avoid jitter/unmounts on blur
   useEffect(() => {
     if (!trailerMovie) {
-      setTrailerVisible(false);
+      setTimeout(() => setTrailerVisible(false), 0);
     }
   }, [trailerMovie]);
 
   const onOpenDetails = useCallback((movie: any) => {
     lastFocusBeforeDetails.current = { zone, item };
-    setActiveDetailMovie(movie);
-  }, [zone, item]);
+    navigate(`/${movie.id || movie._id}`);
+  }, [zone, item, navigate]);
 
   const onCloseDetails = useCallback(() => {
-    setActiveDetailMovie(null);
+    navigate('/home');
+    setIsEpisodesView(false);
     if (lastFocusBeforeDetails.current) {
       const { zone: z, item: i } = lastFocusBeforeDetails.current;
       setFocus(z, i, 'keyboard');
     }
-  }, [setFocus]);
+  }, [navigate, setFocus]);
 
   // Viewport ref for zone-level scroll navigation (wheel outside active row)
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -223,10 +367,6 @@ function HomeContent({ user, onLogout }: { user: any; onLogout: () => void }) {
   const scrolled = zone > 1;
 
   // ── Movie data ──
-  const [feed, setFeed] = useState<any | null>(null);
-  const [myList, setMyList] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const opts: RequestInit = { credentials: 'include' };
     Promise.all([
@@ -242,25 +382,30 @@ function HomeContent({ user, onLogout }: { user: any; onLogout: () => void }) {
   }, []);
 
   // ── Logout ──
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       await fetch(`${API}/auth/logout`, { method: 'POST', credentials: 'include' });
     } catch { /* ignore */ }
     onLogout();
     navigate('/login');
-  };
+  }, [onLogout, navigate]);
 
   // ── Navbar selection via keyboard / gamepad (zone 0) ──
-  const tabs: TabId[] = ['search', 'home', 'shows', 'movies', 'games', 'myhash'];
   const prevSelect = useRef(0);
   useEffect(() => {
     if (selectCount <= prevSelect.current) return;
     prevSelect.current = selectCount;
     if (zone === 0) {
-      if (item === 6) handleLogout();
-      else { const tab = tabs[item]; if (tab) setActiveTab(tab); }
+      if (item === 6) {
+        handleLogout();
+      } else {
+        const tab = TABS[item];
+        if (tab) {
+          setTimeout(() => setActiveTab(tab), 0);
+        }
+      }
     }
-  }, [selectCount, zone, item]);
+  }, [selectCount, zone, item, handleLogout]);
 
   // ── Back action ──
   const prevBack = useRef(0);
@@ -268,15 +413,21 @@ function HomeContent({ user, onLogout }: { user: any; onLogout: () => void }) {
     if (backCount <= prevBack.current) return;
     prevBack.current = backCount;
     if (activeDetailMovie) {
-      onCloseDetails();
+      if (isEpisodesView) {
+        return; // Handled by MovieDetail internally
+      }
+      setTimeout(() => onCloseDetails(), 0);
     } else if (activeTab !== 'home') {
-      setActiveTab('home');
+      setTimeout(() => setActiveTab('home'), 0);
     }
-  }, [backCount, activeTab, activeDetailMovie, onCloseDetails]);
+  }, [backCount, activeTab, activeDetailMovie, onCloseDetails, isEpisodesView]);
 
   // Reset focus to Hero (Zone 1) when switching tabs if we are currently in rows
   const zoneRef = useRef(zone);
-  zoneRef.current = zone;
+  useEffect(() => {
+    zoneRef.current = zone;
+  }, [zone]);
+
   useEffect(() => {
     if (zoneRef.current > 1) {
       setFocus(1, 0, 'keyboard');
@@ -314,23 +465,30 @@ function HomeContent({ user, onLogout }: { user: any; onLogout: () => void }) {
     const rows = getActiveTabRows();
     const rowIndex = zone - 2;
     if (rowIndex >= 0 && rowIndex < rows.length) {
-      const [_, movies] = rows[rowIndex];
+      const [, movies] = rows[rowIndex];
       return movies[item] ?? null;
     }
     return null;
   };
   const currentFocusedMovie = getFocusedMovie();
 
+  // Reset glow animation on focus transition during render phase to avoid effect side-effects
+  const focusKey = `${zone}-${item}`;
+  const [prevFocusKey, setPrevFocusKey] = useState('');
+  if (focusKey !== prevFocusKey) {
+    setPrevFocusKey(focusKey);
+    setGlowVisible(false);
+  }
+
   // Delay the ambient glow animation for premium visual reveal
   useEffect(() => {
-    setGlowVisible(false);
     if (!currentFocusedMovie) return;
 
     const t = setTimeout(() => {
       setGlowVisible(true);
     }, 1800);
     return () => clearTimeout(t);
-  }, [zone, item, currentFocusedMovie]);
+  }, [focusKey, currentFocusedMovie]);
 
   // Pure math — no DOM reads, never changes due to card expansion
   const translateY = calcTranslateY(zone);
@@ -402,7 +560,9 @@ function HomeContent({ user, onLogout }: { user: any; onLogout: () => void }) {
       >
 
         <AnimatePresence mode="wait">
-          {['home', 'movies', 'shows'].includes(activeTab) ? (
+          {activeTab === 'search' ? (
+            <SearchPage key="search" onOpenDetails={onOpenDetails} />
+          ) : ['home', 'movies', 'shows'].includes(activeTab) ? (
             <motion.div
               key={`${activeTab}-content`}
               initial={{ opacity: 0 }}
@@ -436,6 +596,7 @@ function HomeContent({ user, onLogout }: { user: any; onLogout: () => void }) {
                     onStopTrailer={onStopTrailer}
                     trailerPlaying={trailerMovie?._id === hero._id && trailerVisible && trailerIsHero}
                     activeDetailMovieId={activeDetailMovie?._id}
+                    onPlay={onPlayMovie}
                   />
                 ) : null}
               </motion.div>
@@ -489,12 +650,36 @@ function HomeContent({ user, onLogout }: { user: any; onLogout: () => void }) {
             movie={activeDetailMovie}
             onBack={onCloseDetails}
             trailerPlaying={trailerMovie?._id === activeDetailMovie._id && trailerVisible}
+            isEpisodesView={isEpisodesView}
+            setIsEpisodesView={setIsEpisodesView}
+            onStopTrailer={onStopTrailer}
+            onPlay={onPlayMovie}
           />
         )}
       </AnimatePresence>
 
       {/* ── Controller hints overlay ── */}
       <ControllerHints />
+
+      {/* Global Volume Overlay */}
+      <AnimatePresence>
+        {showVolumeOverlay && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="fixed top-8 right-8 z-[999] bg-black/80 backdrop-blur-md px-6 py-4 rounded-2xl flex items-center gap-4 border border-white/10 shadow-2xl pointer-events-none"
+          >
+            {(volume === 0 || muted) ? <VolumeX className="w-8 h-8 text-red-500" /> : <Volume2 className="w-8 h-8 text-white" />}
+            <div className="flex flex-col gap-1">
+              <span className="text-sm font-bold tracking-wider text-white/60 uppercase">Volume</span>
+              <div className="w-32 h-2 bg-white/20 rounded-full overflow-hidden">
+                <div className="h-full bg-white transition-all duration-200" style={{ width: `${(muted ? 0 : volume) * 100}%` }} />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -523,6 +708,8 @@ function ControllerHints() {
 }
 
 // ─────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────
 interface HomeProps {
   user: any;
   onLogout: () => void;
@@ -530,10 +717,6 @@ interface HomeProps {
 
 export function Home({ user, onLogout }: HomeProps) {
   return (
-    <MuteProvider>
-      <FocusProvider>
-        <HomeContent user={user} onLogout={onLogout} />
-      </FocusProvider>
-    </MuteProvider>
+    <HomeContent user={user} onLogout={onLogout} />
   );
 }

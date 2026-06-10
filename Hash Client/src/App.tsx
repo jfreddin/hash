@@ -6,6 +6,9 @@ import { VerifyEmail } from './pages/VerifyEmail';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { ResetPassword } from './pages/ResetPassword';
 import { Home } from './pages/Home';
+import { Watch } from './pages/Watch';
+import { FocusProvider } from './context/FocusContext';
+import { MuteProvider } from './context/MuteContext';
 
 function App() {
   const [user, setUser] = useState<any>(null);
@@ -60,100 +63,150 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Landing Root Check */}
-        <Route 
-          path="/" 
-          element={
-            isAuthenticated ? (
-              user?.isVerified ? <Navigate to="/home" replace /> : <Navigate to="/verify-email" replace />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          } 
-        />
+    <MuteProvider>
+      <FocusProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Landing Root Check */}
+            <Route 
+              path="/" 
+              element={
+                isAuthenticated ? (
+                  user?.isVerified ? <Navigate to="/home" replace /> : <Navigate to="/verify-email" replace />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              } 
+            />
 
-        {/* Login Route */}
-        <Route 
-          path="/login" 
-          element={
-            isAuthenticated ? (
-              user?.isVerified ? <Navigate to="/home" replace /> : <Navigate to="/verify-email" replace />
-            ) : (
-              <Login onLoginSuccess={handleLoginSuccess} />
-            )
-          } 
-        />
+            {/* Login Route */}
+            <Route 
+              path="/login" 
+              element={
+                isAuthenticated ? (
+                  user?.isVerified ? <Navigate to="/home" replace /> : <Navigate to="/verify-email" replace />
+                ) : (
+                  <Login onLoginSuccess={handleLoginSuccess} />
+                )
+              } 
+            />
 
-        {/* Signup Route */}
-        <Route 
-          path="/signup" 
-          element={
-            isAuthenticated ? (
-              user?.isVerified ? <Navigate to="/home" replace /> : <Navigate to="/verify-email" replace />
-            ) : (
-              <Signup onSignupSuccess={handleLoginSuccess} />
-            )
-          } 
-        />
+            {/* Signup Route */}
+            <Route 
+              path="/signup" 
+              element={
+                isAuthenticated ? (
+                  user?.isVerified ? <Navigate to="/home" replace /> : <Navigate to="/verify-email" replace />
+                ) : (
+                  <Signup onSignupSuccess={handleLoginSuccess} />
+                )
+              } 
+            />
 
-        {/* Verify Email Route */}
-        <Route 
-          path="/verify-email" 
-          element={
-            isAuthenticated ? (
-              user?.isVerified ? <Navigate to="/home" replace /> : <VerifyEmail onVerificationSuccess={handleLoginSuccess} />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          } 
-        />
+            {/* Verify Email Route */}
+            <Route 
+              path="/verify-email" 
+              element={
+                isAuthenticated ? (
+                  user?.isVerified ? <Navigate to="/home" replace /> : <VerifyEmail onVerificationSuccess={handleLoginSuccess} />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              } 
+            />
 
-        {/* Forgot Password Route */}
-        <Route 
-          path="/forgot-password" 
-          element={
-            isAuthenticated ? (
-              user?.isVerified ? <Navigate to="/home" replace /> : <Navigate to="/verify-email" replace />
-            ) : (
-              <ForgotPassword />
-            )
-          } 
-        />
+            {/* Forgot Password Route */}
+            <Route 
+              path="/forgot-password" 
+              element={
+                isAuthenticated ? (
+                  user?.isVerified ? <Navigate to="/home" replace /> : <Navigate to="/verify-email" replace />
+                ) : (
+                  <ForgotPassword />
+                )
+              } 
+            />
 
-        {/* Reset Password Route */}
-        <Route 
-          path="/reset-password/:token" 
-          element={
-            isAuthenticated ? (
-              user?.isVerified ? <Navigate to="/home" replace /> : <Navigate to="/verify-email" replace />
-            ) : (
-              <ResetPassword />
-            )
-          } 
-        />
+            {/* Reset Password Route */}
+            <Route 
+              path="/reset-password/:token" 
+              element={
+                isAuthenticated ? (
+                  user?.isVerified ? <Navigate to="/home" replace /> : <Navigate to="/verify-email" replace />
+                ) : (
+                  <ResetPassword />
+                )
+              } 
+            />
 
-        {/* Home Route */}
-        <Route 
-          path="/home" 
-          element={
-            isAuthenticated ? (
-              user?.isVerified ? (
-                <Home user={user} onLogout={handleLogout} />
-              ) : (
-                <Navigate to="/verify-email" replace />
-              )
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          } 
-        />
+            {/* Home Route */}
+            <Route 
+              path="/home" 
+              element={
+                isAuthenticated ? (
+                  user?.isVerified ? (
+                    <Home user={user} onLogout={handleLogout} />
+                  ) : (
+                    <Navigate to="/verify-email" replace />
+                  )
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              } 
+            />
 
-        {/* Catch All Redirect */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+            {/* Movie Detail Route */}
+            <Route 
+              path="/:tmdbId" 
+              element={
+                isAuthenticated ? (
+                  user?.isVerified ? (
+                    <Home user={user} onLogout={handleLogout} />
+                  ) : (
+                    <Navigate to="/verify-email" replace />
+                  )
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              } 
+            />
+
+            {/* Playback Routes */}
+            <Route 
+              path="/watch/:type/:tmdbId" 
+              element={
+                isAuthenticated ? (
+                  user?.isVerified ? (
+                    <Watch />
+                  ) : (
+                    <Navigate to="/verify-email" replace />
+                  )
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              } 
+            />
+            <Route 
+              path="/watch/:type/:tmdbId/:season/:episode" 
+              element={
+                isAuthenticated ? (
+                  user?.isVerified ? (
+                    <Watch />
+                  ) : (
+                    <Navigate to="/verify-email" replace />
+                  )
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              } 
+            />
+
+            {/* Catch All Redirect */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </FocusProvider>
+    </MuteProvider>
   );
 }
 
