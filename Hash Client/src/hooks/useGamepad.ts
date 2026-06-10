@@ -7,8 +7,8 @@ const DEADZONE = 0.5;
 const DEBOUNCE_MS = 170; // ms between repeated inputs
 
 // Standard Gamepad API button indices — same for PS and Xbox in all browsers
-// PS: Cross=0, Circle=1, Square=2, Triangle=3
-// Xbox: A=0, B=1, X=2, Y=3
+// PS: Cross=0, Circle=1, Square=2, Triangle=3, L1=4, R1=5, L2=6, R2=7, Share=8, Options=9
+// Xbox: A=0, B=1, X=2, Y=3, LB=4, RB=5, LT=6, RT=7, View=8, Menu=9
 // D-pad: 12=Up, 13=Down, 14=Left, 15=Right
 const BTN_SELECT = 0;
 const BTN_BACK = 1;
@@ -16,7 +16,8 @@ const BTN_L1 = 4;
 const BTN_R1 = 5;
 const BTN_L2 = 6;
 const BTN_R2 = 7;
-const BTN_TRIANGLE = 3; // PS △ / Xbox Y — toggles mute
+const BTN_SHARE = 8;      // PS Share / Xbox View (left button near d-pad)
+const BTN_TRIANGLE = 3;   // PS △ / Xbox Y — toggles mute
 const BTN_DPAD_UP = 12;
 const BTN_DPAD_DOWN = 13;
 const BTN_DPAD_LEFT = 14;
@@ -75,6 +76,11 @@ export function useGamepad(activeTab: TabId) {
 
       if (justPressed(BTN_TRIANGLE)) {
         toggleMute();
+        handled = true;
+      }
+
+      if (justPressed(BTN_SHARE)) {
+        window.location.reload();
         handled = true;
       }
 

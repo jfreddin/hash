@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
 import { VerifyEmail } from './pages/VerifyEmail';
@@ -10,18 +10,34 @@ import { Watch } from './pages/Watch';
 import { FocusProvider } from './context/FocusContext';
 import { MuteProvider } from './context/MuteContext';
 
+function HistoryClearer() {
+  const navigate = useNavigate();
+  const historyCleared = useRef(false);
+  
+  useEffect(() => {
+    if (!historyCleared.current) {
+      historyCleared.current = true;
+      try {
+        window.history.pushState(null, '', '/');
+        window.history.replaceState(null, '', '/');
+      } catch {
+      }
+    }
+  }, [navigate]);
+
+  return null;
+}
+
 function App() {
   const [user, setUser] = useState<any>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null); // null represents checking auth state
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       const response = await fetch('http://localhost:5001/api/auth/check-auth', {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Include credentials to send/receive cookies
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
       });
 
       const data = await response.json();
@@ -37,11 +53,11 @@ function App() {
       setUser(null);
       setIsAuthenticated(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     checkAuth();
-  }, []);
+  }, [checkAuth]);
 
   const handleLoginSuccess = (loggedInUser: any) => {
     setUser(loggedInUser);
@@ -66,6 +82,7 @@ function App() {
     <MuteProvider>
       <FocusProvider>
         <BrowserRouter>
+          <HistoryClearer />
           <Routes>
             {/* Landing Root Check */}
             <Route 

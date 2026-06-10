@@ -51,7 +51,7 @@ export const VerifyEmail: React.FC<VerifyEmailProps> = ({ onVerificationSuccess 
       if (res.ok) {
         localStorage.removeItem('registering_email');
         onVerificationSuccess(data.user);
-        navigate('/home');
+        navigate('/home', { replace: true });
       } else {
         setError(data.message || 'Verification failed. Please check the code and try again.');
       }

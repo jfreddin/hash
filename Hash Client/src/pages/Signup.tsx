@@ -32,7 +32,7 @@ export const Signup: React.FC<SignupProps> = ({ onSignupSuccess }) => {
       if (res.ok && data.success) {
         localStorage.setItem('registering_email', email);
         onSignupSuccess(data.user);
-        navigate('/verify-email');
+        navigate('/verify-email', { replace: true });
       } else {
         setError(data.message || 'Signup failed. Please try again.');
       }

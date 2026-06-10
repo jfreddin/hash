@@ -47,7 +47,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       const data = await response.json();
       if (response.ok && data.success) {
         onLoginSuccess(data.user);
-        navigate('/home');
+        navigate('/home', { replace: true });
       } else {
         setError(data.message || 'Incorrect password. Please try again or you can reset your password.');
       }

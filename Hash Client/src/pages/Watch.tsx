@@ -38,11 +38,7 @@ export function Watch() {
   }, [tmdbId, type, movie, navigate]);
 
   const handleClose = useCallback(() => {
-    if (window.history.length > 1) {
-      navigate(-1);
-    } else {
-      navigate('/home');
-    }
+    navigate('/home', { replace: true });
   }, [navigate]);
 
   const handlePlayNextEpisode = useCallback((m: any, nextSeason: number, nextEpisode: number) => {

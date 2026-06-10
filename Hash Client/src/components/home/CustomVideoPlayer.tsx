@@ -654,10 +654,9 @@ export function CustomVideoPlayer({
           <p className="text-white/80 font-medium">{playerError}</p>
           <button
             type="button"
-            onClick={onClose}
             className="px-5 py-2.5 rounded-full bg-white text-black font-semibold"
           >
-            Back to Browse
+            Press O to go back
           </button>
         </div>
       )}
@@ -689,7 +688,7 @@ export function CustomVideoPlayer({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3 }}
-            onClick={onClose}
+            
             onMouseEnter={() => setFocus(PLAYBACK_ZONE, 0, 'mouse')}
             className={`absolute top-7 left-8 flex items-center gap-3 px-5 py-2.5 rounded-full border transition-all pointer-events-auto ${zone === PLAYBACK_ZONE && item === 0
               ? 'bg-white text-black border-white scale-105 shadow-lg'

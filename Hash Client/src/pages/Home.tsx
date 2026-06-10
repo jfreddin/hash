@@ -330,7 +330,7 @@ function HomeContent({ user, onLogout }: { user: any; onLogout: () => void }) {
   }, [zone, item, navigate]);
 
   const onCloseDetails = useCallback(() => {
-    navigate('/home');
+    navigate('/home', { replace: true });
     setIsEpisodesView(false);
     if (lastFocusBeforeDetails.current) {
       const { zone: z, item: i } = lastFocusBeforeDetails.current;
@@ -387,7 +387,7 @@ function HomeContent({ user, onLogout }: { user: any; onLogout: () => void }) {
       await fetch(`${API}/auth/logout`, { method: 'POST', credentials: 'include' });
     } catch { /* ignore */ }
     onLogout();
-    navigate('/login');
+    navigate('/login', { replace: true });
   }, [onLogout, navigate]);
 
   // ── Navbar selection via keyboard / gamepad (zone 0) ──

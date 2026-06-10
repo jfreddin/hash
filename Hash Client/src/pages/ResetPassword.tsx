@@ -28,7 +28,7 @@ export const ResetPassword: React.FC = () => {
       const data = await res.json();
       if (res.ok && data.success) {
         setSuccess(true);
-        setTimeout(() => navigate('/login'), 3000);
+        setTimeout(() => navigate('/login', { replace: true }), 3000);
       } else {
         setError(data.message || 'Failed to reset password. The link may have expired.');
       }
